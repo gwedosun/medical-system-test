@@ -17,7 +17,13 @@ module.exports = {
       },
     ]
   },
-  consultas: [],
-  consultasFinalizadas: [],
-  laudos: []
+  consultas: [
+    // array de consultas médicas
+  ],
+  consultasFinalizadas: [
+    // array de consultas finalizadas
+  ],
+  laudos: [
+    // array de laudos médicos
+  ]
 }
