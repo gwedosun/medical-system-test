@@ -1,10 +1,10 @@
-const correctPassword = require('../../database/data').consultorio.senha;
-const correctCnes = require('../../database/data').consultorio.cnes;
+const senhaCorreta = require('../../database/data').consultorio.senha;
+const cnesCorreto = require('../../database/data').consultorio.cnes;
 
 const auth = async (req, res, next) => {
     const { senha_consultorio } = req.query;
     try {
-        if (!senha_consultorio || senha_consultorio !== correctPassword) {
+        if (!senha_consultorio || senha_consultorio !== senhaCorreta) {
             throw new Error();
         };
         next();
@@ -18,7 +18,7 @@ const auth = async (req, res, next) => {
 const authCnes = async (req, res, next) => {
     const { cnes_consultorio } = req.query;
     try {
-        if (!cnes_consultorio || cnes_consultorio !== correctCnes) {
+        if (!cnes_consultorio || cnes_consultorio !== cnesCorreto) {
             throw new Error();
         };
         next();

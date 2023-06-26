@@ -1,20 +1,21 @@
 const express = require('express');
-const controllers = require('../controllers/index.controllers.js');
-const { auth, authCnes } = require('../middleware/auth.js');
 const router = express.Router();
-router.use(auth, authCnes);
+const {
+    listarConsultas,
+    criarConsulta,
+    atualizarConsulta,
+    cancelarConsulta,
+    finalizarConsulta,
+    laudoConsultas,
+    consultasMedico
+} = require('../controllers/index.controllers');
 
-router.get('/consultas', controllers.listAll);
-// router.post('/contas', controllers.createAccount);
-// router.put('/contas/:id/usuario', controllers.updateAccount);
-// router.delete('/contas/:id', controllers.deleteAccount);
-// router.post('/trasacoes/depositar', controllers.deposite);
-// router.post('/trasacoes/sacar', controllers.takeOut);
-// router.post('/trasacoes/transfer', controllers.transfer);
-// router.get('/contas/saldo', controllers.balance);
-// router.get('/contas/extrato', controllers.statement);
-
-
-
+router.get('/consultas', listarConsultas);
+router.post('/consultas', criarConsulta);
+router.put('/consultas/:idConsulta', atualizarConsulta);
+router.delete('/consultas/:idConsulta', cancelarConsulta);
+router.post('/consultas/finalizar', finalizarConsulta);
+router.get('/consultas/laudo', laudoConsultas);
+router.get('/consultas/medico', consultasMedico);
 
 module.exports = router;
