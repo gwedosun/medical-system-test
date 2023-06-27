@@ -1,30 +1,16 @@
 let data = require('../../database/data');
 
 function listarConsultas(req, res) {
-    const { identificador_medico } = req.query;
-
-    if (!identificador_medico) {
-        return res.status(400).json({ mensagem: 'Informe o identificador do médico para prosseguir.' });
-    }
-
-    const medico = data.medicos.find((el) => el.identificador === identificador_medico);
-    if (!medico) {
-        return res.status(404).json({ mensagem: 'O médico informado não existe na base!' });
-    }
-
-    const consultasFinalizadas = data.consultas.filter(
-        (consulta) => consulta.identificadorMedico === identificador_medico && consulta.finalizada
-    );
-
-    return res.status(200).json(consultasFinalizadas);
+    const todasAsConsultas = data.consultas;
+    return res.json(data.consultas);
 };
 
 function criarConsulta(req, res) {
+    const { tipoConsulta, valorConsulta, paciente } = req.body;
     const { nome, cpf, dataNascimento, celular, email, senha } = paciente;
-    const { tipoConsulta, valorConsulta, paciente } = req.body
 
     // verificar se todos os dados estão preenchidos 
-    if (!tipoConsulta || !valorConsulta || !paciente) {
+    if (!tipoConsulta || !valorConsulta || !nome || !cpf || !dataNascimento || !celular || !email || !senha) {
         return res.status(400).json({
             message: 'Preencha todos os dados para prosseguir.'
         })
@@ -53,29 +39,28 @@ function criarConsulta(req, res) {
     };
 
     // verificar se há alguma consulta em andamento
-    if (consultaExistente) {
-        res
-            .status(400)
-            .json({ message: 'Já existe uma consulta em andamento com o CPF/e-mail informado!' });
-        return;
+    const consultaExistenteCpf = data.consultas.find(el => el.paciente.cpf === cpf);
+    const consultaExistenteEmail = data.consultas.find(el => el.paciente.email === email);
+    if (consultaExistenteCpf || consultaExistenteEmail) {
+        return res.status(400).json({ message: 'Já existe uma consulta em andamento com o CPF/e-mail informado!' });
+
     }
     // validar se a especialidade existe
-    const { especialidade } = tipoConsulta;
+    const especialidade = tipoConsulta;
     const medicoEspecializado = data.consultorio.medicos.find((medico) => medico.especialidade === especialidade);
     if (!especialidade) {
         return res.status(400).json({
-            message: 'Não atendemos essa especialidade!'
+            message: 'Não atendemos essa especialidade.'
         });
     };
 
-    // identidicador do médico
+    // identificador do médico
     const idMedico = medicoEspecializado.identificador;
 
-    // criar id de consulta unico
-    let idConsulta = data.consultas.lenght++;
+
 
     const novaConsulta = {
-        identificador: idConsulta,
+        identificador: data.identificador++,
         tipoConsulta,
         idMedico,
         finalizada: false,
@@ -93,20 +78,23 @@ function criarConsulta(req, res) {
 
 
     data.consultas.push(novaConsulta);
-    const { senha: _, ...user } = newAccount;
+    const { senha: _, ...user } = novaConsulta;
     return res.status(201).json(user);
 };
 
 function atualizarConsulta(req, res) {
+    const paciente = req.body;
     const { nome, cpf, dataNascimento, celular, email, senha } = paciente;
-    const idConsulta = parseInt(req.params.idConsulta);
-    const { paciente } = req.body;
+
+    let idConsulta = req.params.idConsulta;
+    if (!Number(idConsulta)) {
+        return res.status(400).json({ message: 'Insira um número válido.' });
+    };
+    idConsulta = Number(idConsulta)
 
     // verificar se todos os campos estão preenchidos
-    if (!paciente) {
-        return res.status(400).json({
-            message: 'Preencha todos os dados para prosseguir.'
-        });
+    if (!nome || !cpf || !dataNascimento || !celular || !email || !senha) {
+        return res.status(400).json({ message: 'Preencha todos os dados para prosseguir.' });
     }
 
     // verificar o id da consulta
@@ -144,10 +132,13 @@ function atualizarConsulta(req, res) {
 }
 
 function cancelarConsulta(req, res) {
-    const idConsulta = parseInt(req.params.idConsulta);
+    const idConsulta = req.params.idConsulta;
 
     // verificar id da consulta como param
-    const consulta = "não sei essa parte ainda";
+    const consulta = data.consultas.find((el) => el.identificador === +idConsulta);
+    if (!consulta) {
+        return res.status(404).json({ message: 'Consulta não existente. Tente novamente.' });
+    }
 
     // ver se a consulta foi finalizada
     if (consulta.finalizada) {
@@ -156,8 +147,7 @@ function cancelarConsulta(req, res) {
 
     // remover a consulta 
     data.consultas = data.consultas.filter(
-        (consulta) => consulta.identificador !== idConsulta
-    );
+        (consulta) => consulta.identificador !== +idConsulta);
     res.status(201).json({ message: "Consulta cancelada com sucesso." });
 };
 
@@ -165,12 +155,12 @@ function finalizarConsulta(req, res) {
     const { idConsulta, textoMedico } = req.body;
 
     // verificar se todos os campos estão preenchidos
-    if (!idConsulta || textoMedico) {
+    if (!idConsulta || !textoMedico) {
         return res.status(400).json({ message: 'Preencha todos os dados para prosseguir.' });
     }
 
     // verificar o id da consulta
-    const consulta = data.consultas.find((el) => el.identificador === idConsulta);
+    const consulta = data.consultas.find((el) => el.identificador === +idConsulta);
     if (!consulta) {
         return res.status(404).json({ message: 'Consulta não existente. Tente novamente.' });
     }
@@ -186,9 +176,8 @@ function finalizarConsulta(req, res) {
     };
 
     // laudo
-    const idLaudo = data.laudos.lenght++;
     let novoLaudo = {
-        idLaudo: idLaudo,
+        idLaudo: data.idLaudo,
         idConsulta: idConsulta,
         idMedico: consulta.idMedico,
         textoMedico: textoMedico,
@@ -198,8 +187,9 @@ function finalizarConsulta(req, res) {
 
     // finalizar consulta
     consulta.finalizada = true;
-    consulta.idLaudo = idLaudo;
+    consulta.idLaudo = data.idLaudo++;
 
+    return res.status(200).json({ message: 'Consulta finalizada com sucesso.' });
 };
 
 function laudoConsultas(req, res) {
@@ -212,7 +202,7 @@ function laudoConsultas(req, res) {
     };
 
     // verificar consulta
-    const consulta = data.consultas.find((el) => el.identificador === idConsulta);
+    const consulta = data.consultas.find((el) => el.identificador === +idConsulta);
     if (!consulta) {
         return res.status(404).json({ message: 'Consulta não existente. Tente novamente.' });
     };
@@ -223,27 +213,29 @@ function laudoConsultas(req, res) {
     };
 
     // verificar se existe laudo
-    const laudo = data.laudos.find((laudo) => laudo.idConsulta === Number(idConsulta));
+    const laudo = data.laudos.find((laudo) => laudo.idConsulta === +idConsulta);
     if (!laudo) {
         return res.status(404).json({ message: 'Laudo não encontrado.' });
     };
 
     // exibir laudo e info
-    const laudoExibido = {
-        identificador: laudo.identificador,
-        idConsulta: laudo.idConsulta,
-        idMedico: laudo.idMedico,
-        textoMedico: laudo.textoMedico,
-        paciente: consulta.paciente
-    }
+    // const laudoExibido = {
+    //     identificador: laudo.identificador,
+    //     idConsulta: laudo.idConsulta,
+    //     idMedico: laudo.idMedico,
+    //     textoMedico: laudo.textoMedico,
+    //     paciente: consulta.paciente
+    // }
 
-    res.status(200).json(laudoExibido);
+    const resultado = { ...consulta, ...laudo }
+
+    res.status(200).json(resultado);
 };
 
 function consultasMedico(req, res) {
     const idMedico = req.query.idMedico;
 
-    const medico = data.medicos.find((el) => el.idMedico === Number(idMedico));
+    const medico = data.consultorio.medicos.find((el) => el.identificador === Number(idMedico));
     if (!medico) {
         return res.status(402).json({ message: 'O médico informado não existe.' });
     }

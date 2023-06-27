@@ -17,12 +17,14 @@ module.exports = {
       },
     ]
   },
+  identificador: 1,
   consultas: [
     // array de consultas médicas
   ],
   consultasFinalizadas: [
     // array de consultas finalizadas
   ],
+  idLaudo: 1,
   laudos: [
     // array de laudos médicos
   ]
