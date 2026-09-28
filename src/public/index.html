@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consultório – Consultas</title>
+<style>
+  :root { --bg:#f3f6f5; --ink:#17302b; --accent:#0f6b62; --erro:#b3261e; --linha:#cbd8d4; --card:#fff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#12201d; --ink:#e4efec; --accent:#5fc4b8; --erro:#ff8a80; --linha:#2f4641; --card:#1a2c28; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font:16px/1.5 system-ui, sans-serif; background:var(--bg); color:var(--ink); }
+  main { max-width:960px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:1.4rem; margin:0 0 16px; }
+  h2 { font-size:1.05rem; margin:24px 0 8px; }
+  section, form { background:var(--card); border:1px solid var(--linha); border-radius:6px; padding:16px; }
+  label { display:block; font-size:.9rem; margin:8px 0 2px; }
+  input, textarea { width:100%; padding:8px; font:inherit; color:inherit; background:transparent; border:1px solid var(--linha); border-radius:4px; }
+  input:focus-visible, textarea:focus-visible, button:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  button { padding:8px 14px; font:inherit; cursor:pointer; color:#fff; background:var(--accent); border:0; border-radius:4px; }
+  button.sec { color:var(--ink); background:transparent; border:1px solid var(--linha); }
+  button.perigo { background:var(--erro); color:#fff; }
+  .grade { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:0 12px; }
+  nav { display:flex; gap:8px; margin-bottom:16px; }
+  nav button[aria-selected="true"] { background:var(--accent); color:#fff; }
+  .tabela { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:.9rem; }
+  th, td { text-align:left; padding:6px 8px; border-bottom:1px solid var(--linha); white-space:nowrap; }
+  .msg { min-height:1.5em; margin:12px 0; font-weight:600; }
+  .msg.erro { color:var(--erro); } .msg.ok { color:var(--accent); }
+  pre { overflow-x:auto; margin:8px 0 0; }
+  [hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Consultório</h1>
+
+  <!-- LOGIN -->
+  <form id="tela-login" data-testid="tela-login" style="max-width:360px">
+    <label for="cnes">CNES</label>
+    <input id="cnes" autocomplete="username">
+    <label for="senha">Senha</label>
+    <input id="senha" type="password" autocomplete="current-password">
+    <p id="erro-login" class="msg erro" role="alert"></p>
+    <button id="btn-entrar" type="submit">Entrar</button>
+  </form>
+
+  <!-- APP -->
+  <div id="tela-app" hidden>
+    <nav>
+      <button class="sec" data-aba="consultas" aria-selected="true">Consultas</button>
+      <button class="sec" data-aba="laudo" aria-selected="false">Laudo</button>
+      <button class="sec" data-aba="medico" aria-selected="false">Atendimentos do médico</button>
+      <button class="sec" id="btn-sair" style="margin-left:auto">Sair</button>
+    </nav>
+    <p id="msg" class="msg" role="status"></p>
+
+    <div id="aba-consultas">
+      <section class="tabela">
+        <table id="tabela">
+          <thead><tr><th>ID</th><th>Tipo</th><th>Médico</th><th>Valor (centavos)</th><th>Paciente</th><th>CPF</th><th>Situação</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="vazio" hidden>Nenhuma consulta cadastrada. Use o formulário abaixo para criar a primeira.</p>
+      </section>
+
+      <h2 id="titulo-form">Nova consulta</h2>
+      <form id="form-consulta">
+        <div class="grade">
+          <div><label for="tipo">Tipo (GERAL ou ODONTOLOGIA)</label><input id="tipo"></div>
+          <div><label for="valor">Valor em centavos</label><input id="valor"></div>
+          <div><label for="nome">Nome</label><input id="nome"></div>
+          <div><label for="cpf">CPF</label><input id="cpf"></div>
+          <div><label for="nasc">Data de nascimento</label><input id="nasc" placeholder="2022-02-02"></div>
+          <div><label for="cel">Celular</label><input id="cel"></div>
+          <div><label for="email">E-mail</label><input id="email"></div>
+          <div><label for="senha-paciente">Senha do paciente</label><input id="senha-paciente"></div>
+        </div>
+        <p><button id="btn-salvar" type="submit">Criar consulta</button>
+           <button id="btn-cancelar-edicao" class="sec" type="button" hidden>Cancelar edição</button></p>
+      </form>
+
+      <h2>Finalizar consulta</h2>
+      <form id="form-finalizar">
+        <label for="fin-id">ID da consulta</label><input id="fin-id">
+        <label for="fin-texto">Laudo do médico (até 200 caracteres)</label><textarea id="fin-texto" rows="3"></textarea>
+        <p><button id="btn-finalizar" type="submit">Finalizar consulta</button></p>
+      </form>
+    </div>
+
+    <div id="aba-laudo" hidden>
+      <form id="form-laudo">
+        <label for="laudo-id">ID da consulta</label><input id="laudo-id">
+        <label for="laudo-senha">Senha do paciente</label><input id="laudo-senha" type="password">
+        <p><button id="btn-laudo" type="submit">Ver laudo</button></p>
+        <pre id="laudo-saida"></pre>
+      </form>
+    </div>
+
+    <div id="aba-medico" hidden>
+      <form id="form-medico">
+        <label for="medico-id">ID do médico</label><input id="medico-id">
+        <p><button id="btn-medico" type="submit">Listar atendimentos</button></p>
+        <pre id="medico-saida"></pre>
+      </form>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let cred = JSON.parse(sessionStorage.getItem('cred') || 'null');
+let editandoId = null;
+
+async function api(caminho, opcoes = {}) {
+  const r = await fetch(caminho, { headers: { 'Content-Type': 'application/json' }, ...opcoes });
+  const txt = await r.text();
+  let corpo = null;
+  try { corpo = txt ? JSON.parse(txt) : null; } catch { corpo = { mensagem: txt }; }
+  return { ok: r.ok, status: r.status, corpo };
+}
+const qs = () => `cnes_consultorio=${encodeURIComponent(cred.cnes)}&senha_consultorio=${encodeURIComponent(cred.senha)}`;
+function aviso(texto, tipo) { const m = $('msg'); m.textContent = texto || ''; m.className = 'msg ' + (tipo || ''); }
+function falha(r) { aviso(r.corpo?.mensagem || `Erro ${r.status}`, 'erro'); }
+
+function mostrar(app) {
+  $('tela-login').hidden = app; $('tela-app').hidden = !app;
+  if (app) listar();
+}
+
+$('tela-login').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  cred = { cnes: $('cnes').value, senha: $('senha').value };
+  const r = await api(`/consultas?${qs()}`);
+  if (r.ok) { sessionStorage.setItem('cred', JSON.stringify(cred)); $('erro-login').textContent = ''; mostrar(true); }
+  else { cred = null; $('erro-login').textContent = r.corpo?.mensagem || 'Não foi possível entrar. Confira CNES e senha.'; }
+});
+
+$('btn-sair').addEventListener('click', () => { sessionStorage.removeItem('cred'); cred = null; $('senha').value = ''; mostrar(false); });
+
+document.querySelectorAll('nav [data-aba]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('nav [data-aba]').forEach((x) => x.setAttribute('aria-selected', x === b));
+  ['consultas', 'laudo', 'medico'].forEach((a) => { $('aba-' + a).hidden = a !== b.dataset.aba; });
+  aviso('');
+}));
+
+async function listar() {
+  const r = await api(`/consultas?${qs()}`);
+  const corpo = $('tabela').tBodies[0]; corpo.innerHTML = '';
+  if (!r.ok) return falha(r);
+  const lista = r.status === 204 ? [] : r.corpo;
+  $('vazio').hidden = lista.length > 0;
+  lista.forEach((c) => {
+    const tr = corpo.insertRow(); tr.dataset.id = c.identificador;
+    [c.identificador, c.tipoConsulta, c.identificadorMedico, c.valorConsulta, c.paciente?.nome, c.paciente?.cpf,
+     c.finalizada ? 'Finalizada' : 'Em andamento'].forEach((v) => { tr.insertCell().textContent = v ?? ''; });
+    const acoes = tr.insertCell();
+    if (!c.finalizada) {
+      [['editar', 'Editar', 'sec', () => editar(c)], ['finalizar', 'Finalizar', 'sec', () => { $('fin-id').value = c.identificador; $('fin-texto').focus(); }],
+       ['excluir', 'Cancelar consulta', 'perigo', () => excluir(c.identificador)]].forEach(([cls, txt, estilo, fn]) => {
+        const b = document.createElement('button'); b.className = `${cls} ${estilo}`; b.type = 'button'; b.textContent = txt;
+        b.addEventListener('click', fn); acoes.append(b, ' ');
+      });
+    }
+  });
+}
+
+function corpoPaciente() {
+  return { nome: $('nome').value, cpf: $('cpf').value, dataNascimento: $('nasc').value,
+           celular: $('cel').value, email: $('email').value, senha: $('senha-paciente').value };
+}
+function limparForm() {
+  $('form-consulta').reset(); editandoId = null;
+  $('titulo-form').textContent = 'Nova consulta'; $('btn-salvar').textContent = 'Criar consulta';
+  $('tipo').disabled = $('valor').disabled = false; $('btn-cancelar-edicao').hidden = true;
+}
+function editar(c) {
+  editandoId = c.identificador; const p = c.paciente || {};
+  $('nome').value = p.nome || ''; $('cpf').value = p.cpf || ''; $('nasc').value = p.dataNascimento || '';
+  $('cel').value = p.celular || ''; $('email').value = p.email || ''; $('senha-paciente').value = p.senha || '';
+  $('tipo').value = c.tipoConsulta; $('valor').value = c.valorConsulta; $('tipo').disabled = $('valor').disabled = true;
+  $('titulo-form').textContent = `Editar paciente da consulta ${c.identificador}`;
+  $('btn-salvar').textContent = 'Salvar alterações'; $('btn-cancelar-edicao').hidden = false; $('nome').focus();
+}
+$('btn-cancelar-edicao').addEventListener('click', limparForm);
+
+$('form-consulta').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  let r;
+  if (editandoId) {
+    r = await api(`/consulta/${editandoId}/paciente`, { method: 'PUT', body: JSON.stringify(corpoPaciente()) });
+  } else {
+    const v = $('valor').value;
+    r = await api('/consulta', { method: 'POST', body: JSON.stringify({
+      tipoConsulta: $('tipo').value, valorConsulta: v !== '' && !isNaN(v) ? Number(v) : v, paciente: corpoPaciente() }) });
+  }
+  if (!r.ok) return falha(r);
+  aviso(editandoId ? 'Dados do paciente atualizados.' : 'Consulta criada.', 'ok'); limparForm(); listar();
+});
+
+async function excluir(id) {
+  const r = await api(`/consulta/${id}`, { method: 'DELETE' });
+  if (!r.ok) return falha(r);
+  aviso('Consulta cancelada.', 'ok'); listar();
+}
+
+$('form-finalizar').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const id = $('fin-id').value;
+  const r = await api('/consulta/finalizar', { method: 'POST', body: JSON.stringify({
+    identificadorConsulta: id !== '' && !isNaN(id) ? Number(id) : id, textoMedico: $('fin-texto').value }) });
+  if (!r.ok) return falha(r);
+  aviso('Consulta finalizada.', 'ok'); $('form-finalizar').reset(); listar();
+});
+
+$('form-laudo').addEventListener('submit', async (e) => {
+  e.preventDefault(); $('laudo-saida').textContent = '';
+  const r = await api(`/consulta/laudo?identificador_consulta=${encodeURIComponent($('laudo-id').value)}&senha=${encodeURIComponent($('laudo-senha').value)}`);
+  if (!r.ok) return falha(r);
+  aviso(''); $('laudo-saida').textContent = JSON.stringify(r.corpo, null, 2);
+});
+
+$('form-medico').addEventListener('submit', async (e) => {
+  e.preventDefault(); $('medico-saida').textContent = '';
+  const r = await api(`/consultas/medico?identificador_medico=${encodeURIComponent($('medico-id').value)}`);
+  if (!r.ok) return falha(r);
+  aviso(''); $('medico-saida').textContent = r.status === 204 || !r.corpo?.length ? 'Este médico ainda não atendeu nenhuma consulta.' : JSON.stringify(r.corpo, null, 2);
+});
+
+mostrar(!!cred);
+</script>
+</body>
+</html>
